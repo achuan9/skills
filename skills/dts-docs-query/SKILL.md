@@ -1,0 +1,387 @@
+---
+name: dts-docs-query
+description: |
+  查询 DTS SDK API 文档的智能助手。当用户查询 DTS SDK、freedo、孪生地图相关 API 时触发。
+
+  支持功能：
+  1. 精确查询：解析 acApi.module.method 格式的 API 调用，返回详细文档
+  2. 自然语言查询：理解"如何添加标注点"等自然语言问题
+  3. 惰性爬取：按需从 https://sdk.freedo3d.com/doc/api/ 获取文档
+  4. 本地缓存：自动缓存已查询的 API，节省 token 和时间
+  5. 智能纠错：404 时提示用户提供正确的 URL
+  6. 文档导出：自动生成 Markdown 文档并保存到用户本地目录
+
+  触发关键词：DTS、孪生、地图、acApi、freedo
+
+  使用场景：
+  - 用户询问 "acApi.marker.add 如何使用？"
+  - 用户提问 "如何在 DTS 中创建标注？"
+  - 用户查询 "acApi.box 的所有方法"
+
+  文档导出：
+  - 默认保存位置：`C:\Users\{username}\DTS-Docs\`
+  - 文件命名：`{ClassName}.md`
+  - 编码格式：UTF-8（确保中文正常）
+  - 可通过环境变量 `DTS_DOCS_DIR` 自定义输出目录
+---
+
+# DTS SDK 文档查询
+
+当用户询问 DTS SDK API 时，按以下流程处理：
+
+## 1. 识别查询类型
+
+**精确查询**：用户明确指定 API 路径
+```
+acApi.marker.add -> 查询 Marker.add 方法
+acApi.marker -> 查询 Marker 模块所有方法
+```
+
+**自然语言查询**：用户描述需求
+```
+"如何添加标注点" -> 搜索相关 API（Marker.add）
+"创建一个盒子" -> 搜索相关 API（Box.create）
+```
+
+## 2. URL 拼接规则
+
+基础 URL：`https://sdk.freedo3d.com/doc/api/`
+
+拼接规则：
+- `acApi.marker` -> `Marker.html` -> `{base_url}Marker.html`
+- `acApi.box.create` -> `Box.html` -> `{base_url}Box.html`
+
+详见：[API 结构说明](references/dts-api-structure.md)
+
+## 3. 执行查询
+
+### 步骤 1：检查缓存
+
+```bash
+python scripts/cache_manager.py --check <ClassName>
+```
+
+如果缓存存在且未过期（7天内），直接使用缓存。
+
+### 步骤 2：下载 HTML（如需要）
+
+```bash
+python scripts/http_fetcher.py "https://sdk.freedo3d.com/doc/api/Marker.html" data/cache/Marker.html
+```
+
+### 步骤 3：解析 HTML
+
+```bash
+python scripts/html_parser.py data/cache/Marker.html
+```
+
+详见：[JSDoc 选择器指南](references/jsdom-selectors.md)
+
+### 步骤 4：提取相关方法
+
+如果用户查询特定方法（如 `acApi.marker.add`），从解析结果中过滤出 `add` 方法。
+
+### 步骤 5：格式化输出
+
+按照以下格式输出：
+
+#### 格式 1：完整方法（默认）
+
+```
+# acApi.marker.add(data, fn)
+
+## 功能
+添加一个或多个标注点
+
+## 参数
+- `data` (object | array): 标注数据...
+- `fn` (function): 可选的回调函数
+
+## 返回值
+无返回值
+
+## 示例
+\`\`\`javascript
+acApi.marker.add({
+  id: 'm1',
+  coordinate: [116.39, 39.9, 0]
+});
+\`\`\`
+```
+
+#### 格式 2：简洁格式
+
+只包含签名和核心描述。
+
+#### 格式 3：仅代码示例
+
+只返回代码示例部分。
+
+## 4. 处理结果
+
+### 成功（200）
+
+1. 解析 HTML 提取 API 信息
+2. 格式化为 Markdown（代码示例优先）
+3. 保存到缓存：`python scripts/cache_manager.py --save ClassName data`
+4. 返回给用户
+
+### 404 错误
+
+1. 提示用户："⚠️ 未找到 {ClassName} 的文档"
+2. 询问："请提供正确的文档 URL"
+3. 保存到 `data/url_mappings.json`
+4. 重新查询
+
+详见：[错误处理指南](references/error-handling.md)
+
+## 核心脚本
+
+### http_fetcher.py
+
+HTTP 请求客户端，支持重试和超时。
+
+```bash
+python scripts/http_fetcher.py <url> [output_file]
+```
+
+返回：`(html_content, status_code)`
+
+### html_parser.py
+
+JSDoc HTML 解析器，提取 API 方法和参数。
+
+```bash
+python scripts/html_parser.py <html_file>
+```
+
+返回：JSON 格式的 API 信息
+
+### cache_manager.py
+
+缓存管理器，支持过期检测。
+
+```bash
+# 检查缓存
+python scripts/cache_manager.py --check <class_name>
+
+# 列出所有缓存
+python scripts/cache_manager.py --list
+
+# 清理缓存
+python scripts/cache_manager.py --clear [class_name]
+```
+
+### link_extractor.py
+
+从 HTML 提取引用的类型链接。
+
+```bash
+python scripts/link_extractor.py <html_file>
+```
+
+返回：类名列表
+
+## 输出格式
+
+根据用户需求选择格式：
+
+### detailed（默认）
+
+完整格式，包含签名、描述、参数、返回值、示例。
+
+### compact
+
+简洁格式，只包含签名和核心描述。
+
+### code-only
+
+仅代码示例。
+
+## 示例对话
+
+### 示例 1：精确查询方法
+
+**用户**：acApi.marker.add 如何使用？
+
+**Claude**：
+```
+# acApi.marker.add(data, fn)
+
+## 功能
+添加一个或多个标注点。调用时注意：单次创建的 Marker 对象数量不要超过 5000 个，在一个工程内创建的 Marker 对象总数量不要超过 20 万个。
+
+## 参数
+- `data` (object | array): 标注数据...
+- `fn` (function): 可选的回调函数，参考异步接口的调用方式
+
+## 示例
+\`\`\`javascript
+acApi.marker.add({
+  id: 'm1',
+  coordinate: [116.39, 39.9, 0],
+  imagePath: 'icon.png'
+}, function(marker) {
+  console.log('标注已添加', marker);
+});
+\`\`\`
+```
+
+### 示例 2：自然语言查询
+
+**用户**：如何在 DTS 中创建一个红色盒子？
+
+**Claude**：
+根据您的需求，可以使用 `acApi.box.create` 方法：
+
+```
+# acApi.box.create(options)
+
+## 功能
+创建一个盒子对象
+
+## 参数
+- `options.color` (Color): 盒子颜色，默认为白色
+- `options.position` (array): 盒子位置 [x, y, z]
+- `options.size` (array): 盒子尺寸 [width, height, depth]
+
+## 示例
+\`\`\`javascript
+acApi.box.create({
+  color: acApi.Color.Red,
+  position: [116.39, 39.9, 0],
+  size: [100, 100, 100]
+});
+\`\`\`
+```
+
+### 示例 3：查询模块所有方法
+
+**用户**：acApi.marker 有哪些方法？
+
+**Claude**：
+Marker 类包含以下主要方法：
+
+- `add(data, fn)` - 添加标注点
+- `delete(ids, fn)` - 删除标注
+- `clear(fn)` - 清除所有标注
+- `get(ids, fn)` - 获取标注信息
+- `setCoordinate(id, newVal, fn)` - 设置坐标
+- `focus(ids, distance, flyTime, rotation, fn)` - 定位到标注
+- ...
+
+（完整列表已缓存，共 45 个方法）
+
+### 示例 4：404 错误处理
+
+**用户**：acApi.wrongclass
+
+**Claude**：
+⚠️ 未找到 WrongClass 的文档 (404)
+
+请提供正确的文档 URL，例如：
+```
+https://sdk.freedo3d.com/doc/api/CorrectClass.html
+```
+
+或者输入正确的类名，例如：`CorrectClass`
+
+**用户**：https://sdk.freedo3d.com/doc/api/Marker.html
+
+**Claude**：
+✅ 已记录映射：WrongClass → Marker
+
+现在正在查询 Marker 的文档...
+
+（返回 Marker 的文档）
+
+## 注意事项
+
+- **缓存有效期**：7 天，过期后自动刷新
+- **离线查询**：有缓存时支持离线查询
+- **引用解析**：自动解析 HTML 中的 `<a>` 标签，发现相关类型
+- **URL 映射**：用户修正的映射保存在 `data/url_mappings.json`
+- **代码示例优先**：查询结果优先展示代码示例
+- **参数详细说明**：复杂参数（如 Marker 的 data）包含详细字段说明
+- **自动文档生成**：查询成功后自动生成 Markdown 文档到用户目录
+
+## 文档自动生成功能
+
+### 默认行为
+
+每次查询成功后，自动生成 Markdown 文档并保存到：
+- Windows: `C:\Users\{username}\DTS-Docs\`
+- Mac/Linux: `~/DTS-Docs/`
+
+### 文档结构
+
+生成的文档包含完整的 API 信息：
+
+```markdown
+---
+# Auto-generated by dts-docs-query
+# Class: Marker
+# Generated at: 2025-01-28T10:30:00
+# Source: https://sdk.freedo3d.com/doc/api/Marker.html
+---
+
+# Marker
+
+**描述**: 标注点类，用于在地图上添加标注
+
+## 方法列表
+
+### add(data, fn)
+
+**签名**: `add(data, fn)`
+
+**描述**: 添加一个或多个标注点
+
+**参数**:
+- `data` (object | array): 标注数据
+- `fn` (function): 可选的回调函数
+
+**示例**:
+```javascript
+acApi.marker.add({
+  id: 'm1',
+  coordinate: [116.39, 39.9, 0]
+});
+```
+```
+
+### 命令行参数控制
+
+```bash
+# 默认自动生成文档
+python query.py acApi.marker
+
+# 禁用文档生成
+python query.py acApi.marker --no-save
+
+# 指定输出目录
+python query.py acApi.marker --output-dir "C:\MyDocs"
+```
+
+### 环境变量配置
+
+可通过环境变量自定义输出目录：
+
+```bash
+# Windows PowerShell
+$env:DTS_DOCS_DIR="C:\MyCustomDocs"
+
+# Windows CMD
+set DTS_DOCS_DIR=C:\MyCustomDocs
+
+# Linux/Mac
+export DTS_DOCS_DIR=~/MyCustomDocs
+```
+
+### 编码问题修复
+
+使用 `chardet` 库进行智能编码检测，确保中文内容正常显示：
+- 自动检测网页编码
+- 支持常见中文编码（gbk, gb2312, gb18030）
+- 所有文档使用 UTF-8 编码保存
+

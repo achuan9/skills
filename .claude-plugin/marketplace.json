@@ -1,0 +1,20 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "dts-sdk-skills",
+  "description": "Claude Code skills collection including DTS SDK documentation query",
+  "owner": {
+    "name": "achuan9"
+  },
+  "plugins": [
+    {
+      "name": "dts-docs-query",
+      "description": "Query DTS SDK API documentation with intelligent parsing and caching",
+      "version": "1.0.0",
+      "author": {
+        "name": "achuan9"
+      },
+      "source": "./skills/dts-docs-query",
+      "category": "development"
+    }
+  ]
+}

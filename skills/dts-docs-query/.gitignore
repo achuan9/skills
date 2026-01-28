@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+venv/
+ENV/
+
+# Data files (cache and parsed data)
+data/cache/
+data/parsed/
+data/url_mappings.json
+
+# Test files
+test_*.html
+test_*.json
+*.tmp
