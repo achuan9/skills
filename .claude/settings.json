@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '🔍 INSTRUCTION: If the user asks about DTS SDK, acApi, freedo, 孪生地图, or 孪生, use Skill(dts-docs-query) to handle the request.'"
+          }
+        ]
+      }
+    ]
+  }
+}

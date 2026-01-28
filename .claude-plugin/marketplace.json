@@ -5,16 +5,18 @@
   "owner": {
     "name": "achuan9"
   },
+  "metadata": {
+    "version": "1.0.0"
+  },
   "plugins": [
     {
-      "name": "dts-docs-query",
-      "description": "Query DTS SDK API documentation with intelligent parsing and caching",
-      "version": "1.0.0",
-      "author": {
-        "name": "achuan9"
-      },
-      "source": "./skills/dts-docs-query",
-      "category": "development"
+      "name": "dts-skills",
+      "description": "DTS SDK documentation query skills for intelligent API parsing",
+      "source": "./skills",
+      "strict": false,
+      "skills": [
+        "./dts-docs-query"
+      ]
     }
   ]
 }
