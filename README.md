@@ -1,6 +1,6 @@
-# DTS SDK Skills Collection
+# Personal Claude Code Skills Collection
 
-A collection of Claude Code skills to enhance development productivity.
+A personal collection of Claude Code skills to enhance development productivity.
 
 ## 📦 Included Skills
 
@@ -30,12 +30,12 @@ Execute the following commands in Claude Code:
 /plugin marketplace add https://github.com/achuan9/skills
 
 # Install dts-docs-query skill
-/plugin install dts-docs-query@dts-sdk-skills
+/plugin install dts-docs-query@achuan9-skills
 ```
 
 After installation, the skill will be copied to:
 ```
-C:\Users\{username}\.claude\plugins\cache\dts-sdk-skills\{commit}\
+C:\Users\{username}\.claude\plugins\cache\achuan9-skills\{commit}\
 ```
 
 ### Method 2: Manual Installation

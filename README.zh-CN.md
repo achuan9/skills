@@ -1,6 +1,6 @@
-# DTS SDK Skills Collection
+# Personal Claude Code Skills Collection
 
-Claude Code Skills 集合，提升开发效率。
+个人的 Claude Code Skills 集合，提升开发效率。
 
 ## 📦 包含的 Skills
 
@@ -30,12 +30,12 @@ DTS SDK API 文档查询工具，支持精确查询和自然语言查询。
 /plugin marketplace add https://github.com/achuan9/skills
 
 # 安装 dts-docs-query skill
-/plugin install dts-docs-query@dts-sdk-skills
+/plugin install dts-docs-query@achuan9-skills
 ```
 
 安装后 skill 会被复制到：
 ```
-C:\Users\{username}\.claude\plugins\cache\dts-sdk-skills\{commit}\
+C:\Users\{username}\.claude\plugins\cache\achuan9-skills\{commit}\
 ```
 
 ### 方式 2：手动安装
