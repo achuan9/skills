@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '🔍 INSTRUCTION: If the user asks about DTS SDK, acApi, freedo, 孪生地图, or 孪生, use Skill(dts-docs-query) to handle the request.'"
+            "command": "echo '⚡ TRIGGER: When user mentions DTS, acApi, freedo, 孪生地图, or 孪生, immediately use: /dts-docs-query'"
           }
         ]
       }
