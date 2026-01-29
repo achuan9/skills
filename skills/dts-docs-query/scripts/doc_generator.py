@@ -192,6 +192,89 @@ def generate_method_markdown(method: dict, class_name: str, output_dir: Path = N
     return str(file_path)
 
 
+def generate_all_markdowns(data: dict) -> dict:
+    """生成所有格式的 Markdown（用于缓存）
+
+    Args:
+        data: 解析后的 API 数据
+
+    Returns:
+        包含 full, compact, methods 的字典
+    """
+    return {
+        'full': _generate_full_markdown(data),
+        'compact': _generate_compact_markdown(data),
+        'methods': {
+            method['name']: _generate_method_markdown(method, data['class_name'])
+            for method in data['methods']
+        }
+    }
+
+
+def _generate_full_markdown(data: dict) -> str:
+    """生成完整格式（所有方法详情）"""
+    lines = [
+        f"# {data['class_name']}\n",
+        f"**描述**: {data['description']}\n",
+        f"**包含方法**: {len(data['methods'])} 个\n",
+        "## 方法详情\n"
+    ]
+
+    for method in data['methods']:
+        lines.append(_generate_method_markdown(method, data['class_name']))
+        lines.append("\n---\n")
+
+    return '\n'.join(lines)
+
+
+def _generate_compact_markdown(data: dict) -> str:
+    """生成简洁格式（方法列表概览）"""
+    lines = [
+        f"# {data['class_name']}\n",
+        f"**描述**: {data['description']}\n",
+        f"**包含方法**: {len(data['methods'])} 个\n",
+        "## 方法列表\n"
+    ]
+
+    for method in data['methods'][:10]:
+        desc = method['description'][:80] + '...' if len(method['description']) > 80 else method['description']
+        lines.append(f"- **{method['signature']}**: {desc}")
+
+    if len(data['methods']) > 10:
+        lines.append(f"\n... 还有 {len(data['methods']) - 10} 个方法")
+
+    return '\n'.join(lines)
+
+
+def _generate_method_markdown(method: dict, class_name: str) -> str:
+    """生成单个方法的 Markdown"""
+    lines = [
+        f"### {method['name']}\n",
+        f"**签名**: `{method['signature']}`\n",
+        f"**描述**: {method['description']}\n"
+    ]
+
+    if method['parameters']:
+        lines.append("**参数**:")
+        for param in method['parameters']:
+            lines.append(f"- `{param['name']}` ({param['type']}): {param['description']}")
+        lines.append("")
+
+    if method['returns']:
+        lines.append(f"**返回值**: {method['returns']}")
+        lines.append("")
+
+    if method['examples']:
+        lines.append("**示例**:")
+        for ex in method['examples']:
+            lines.append("```javascript")
+            lines.append(ex)
+            lines.append("```")
+        lines.append("")
+
+    return '\n'.join(lines)
+
+
 if __name__ == '__main__':
     import sys
 

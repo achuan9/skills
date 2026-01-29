@@ -126,7 +126,7 @@ def query_api(api_path: str, method_name: str = None, save_doc: bool = True, out
     return result_dict
 
 def format_result(result: dict, format_type: str = 'detailed') -> str:
-    """格式化查询结果为 Markdown
+    """格式化查询结果为 Markdown（优先使用缓存）
 
     Args:
         result: 查询结果
@@ -140,6 +140,53 @@ def format_result(result: dict, format_type: str = 'detailed') -> str:
 
     data = result['data']
 
+    # 优先从缓存读取 Markdown
+    if 'markdown' in data:
+        return _get_markdown_from_cache(data, format_type)
+
+    # 向后兼容：动态生成（旧缓存数据）
+    return _generate_markdown_fallback(data, format_type)
+
+
+def _get_markdown_from_cache(data: dict, format_type: str) -> str:
+    """从缓存读取 Markdown"""
+    markdown_cache = data['markdown']
+
+    # 如果有聚焦的方法
+    if 'focused_method' in data:
+        method_name = data['focused_method']['name']
+        if method_name in markdown_cache.get('methods', {}):
+            return markdown_cache['methods'][method_name]
+
+    # 根据 format_type 返回对应格式
+    if format_type == 'compact':
+        return markdown_cache.get('compact', markdown_cache['full'])
+    elif format_type == 'code-only':
+        return _extract_code_only(data)
+    else:
+        return markdown_cache.get('full', '')
+
+
+def _extract_code_only(data: dict) -> str:
+    """提取仅代码示例"""
+    if 'focused_method' in data:
+        method = data['focused_method']
+        if method['examples']:
+            return '\n\n'.join([f"```javascript\n{ex}\n```" for ex in method['examples']])
+        return "# 无代码示例"
+
+    # 收集所有方法的示例
+    examples = []
+    for method in data['methods'][:5]:  # 只显示前5个
+        if method['examples']:
+            examples.append(f"## {method['name']}")
+            examples.extend([f"```javascript\n{ex}\n```" for ex in method['examples']])
+
+    return '\n'.join(examples) if examples else "# 无代码示例"
+
+
+def _generate_markdown_fallback(data: dict, format_type: str) -> str:
+    """向后兼容：动态生成 Markdown（旧缓存数据）"""
     # 如果有聚焦的方法，只显示该方法
     if 'focused_method' in data:
         method = data['focused_method']
@@ -154,7 +201,8 @@ def format_result(result: dict, format_type: str = 'detailed') -> str:
     ]
 
     for method in data['methods'][:10]:  # 只显示前 10 个
-        lines.append(f"- **{method['signature']}**: {method['description'][:80]}...")
+        desc = method['description'][:80] + '...' if len(method['description']) > 80 else method['description']
+        lines.append(f"- **{method['signature']}**: {desc}")
 
     if len(data['methods']) > 10:
         lines.append(f"\n... 还有 {len(data['methods']) - 10} 个方法")
